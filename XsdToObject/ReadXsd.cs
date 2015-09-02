@@ -46,12 +46,21 @@ namespace XsdToObject
             //[Namespace]
             var manager = new XmlNamespaceManager(documento.NameTable);
             manager.AddNamespace("ns", "http://www.w3.org/2001/XMLSchema");
+ 
+            var ilimitado = elemento.HasAttribute("maxOccurs") && (elemento.Attributes.GetNamedItem("maxOccurs").Value == "unbounded");
+            var descripcion = "";
+            if (elemento.FirstChild.LocalName == "annotation")
+            {
+                descripcion = elemento.FirstChild.InnerText;
+            }
 
             var nodoModel = new Xsd.Nodo
             {
                 Nombre = elemento.Attributes.GetNamedItem("name").Value,
+                Descripcion = descripcion,
                 Atributos = new List<Xsd.Atributo>(),
-                Nodos = new List<Xsd.Nodo>()
+                Nodos = new List<Xsd.Nodo>(),
+                Ilimitado = ilimitado
             };
 
             //type [Atributos Externos]
@@ -60,9 +69,20 @@ namespace XsdToObject
                 var complexTypeNodoNodo = ObtenerAtributosPorTipo(documento, elemento.Attributes.GetNamedItem("type").Value, manager);
                 foreach (XmlElement complexTypeAtributos in complexTypeNodoNodo.ChildNodes)
                 {
+                    var requerido = complexTypeAtributos.HasAttribute("use") && (complexTypeAtributos.Attributes.GetNamedItem("use").Value == "required");
+                    var descripcionAttr = "";
+                    if (complexTypeAtributos.FirstChild.LocalName == "annotation")
+                    {
+                        descripcionAttr = complexTypeAtributos.FirstChild.InnerText;
+                    }
                     if (complexTypeAtributos.LocalName == "attribute")
                     {
-                        var atributoModel = new Xsd.Atributo { Nombre = complexTypeAtributos.Attributes.GetNamedItem("name").Value };
+                        var atributoModel = new Xsd.Atributo
+                        {
+                            Nombre = complexTypeAtributos.Attributes.GetNamedItem("name").Value,
+                            Descripcion = descripcionAttr,
+                            Requerido = requerido
+                        };
                         nodoModel.Atributos.Add(atributoModel);
                     }
                 }
@@ -93,9 +113,17 @@ namespace XsdToObject
                 //Atributos del nodo
                 if (nodoComplexType.LocalName == "attribute")
                 {
+                    var requerido = nodoComplexType.HasAttribute("use") && (nodoComplexType.Attributes.GetNamedItem("use").Value == "required");
+                    var descripcionAttr = "";
+                    if (nodoComplexType.FirstChild.LocalName == "annotation")
+                    {
+                        descripcionAttr = nodoComplexType.FirstChild.InnerText;
+                    }
                     var atributoModel = new Xsd.Atributo
                     {
-                        Nombre = nodoComplexType.Attributes.GetNamedItem("name").Value
+                        Nombre = nodoComplexType.Attributes.GetNamedItem("name").Value,
+                        Requerido = requerido,
+                        Descripcion = descripcionAttr
                     };
                     nodoModel.Atributos.Add(atributoModel);
                 }
